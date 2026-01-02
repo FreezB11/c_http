@@ -12,6 +12,14 @@ pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 //       http_json_response(res, 200, "{\"userId\":\"%s\"}", id);
 // }
 
+void hi_router(http_req_t *req, http_resp_t *res){
+    static __thread char res_buf[] = "hello";
+    res->is_static = 1;
+    res->status = 200;
+    res->body_ptr = res_buf;
+    res->body_len = strlen(res_buf);
+}
+
 int main(){
     /*
     http server = http_server(<optional_name>, port, ipv4 or ipv6)
@@ -41,6 +49,7 @@ int main(){
     */
     add_route("GET","/echo", handle_echo);
     add_route("GET","/ping", handle_ping);
+    add_route("GET","/hi", hi_router);
     if (!App) {
         fprintf(stderr, "Failed to create server\n");
         return 1;

@@ -26,7 +26,7 @@
 #define MAX_EVENTS 8192
 #define BUFFER_SIZE 16384
 #define RESP_BUFFER_SIZE 32768
-#define THREAD_COUNT 6  // Increase for more cores
+#define THREAD_COUNT 4  // Increase for more cores
 #define CONN_POOL_SIZE 16384
 
 /*

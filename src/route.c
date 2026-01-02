@@ -7,14 +7,29 @@
 route_t routes[128];
 int route_count = 0;
 
+// void handle_ping(http_req_t *req, http_resp_t *res) {
+//     printf("[LOG]: server is pinged\n");
+//     static __thread char json[RESP_BUFFER_SIZE] = "{\"status\":\"ok\"}";
+//     printf("[LOG]: size of the message = %d\n", sizeof(json));
+//     printf("[LOG]: size of the message = %d\n", sizeof("{\"status\":\"ok\"}"));
+//     res->status = 200;
+//     res->body_ptr = json;
+//     res->body_len = sizeof(json);
+// }
+
 void handle_ping(http_req_t *req, http_resp_t *res) {
-    static const char json[] = "{\"status\":\"ok\"}";
+    // printf("[LOG]: server is pinged\n");
+
+    static __thread char json[] = "{\"status\":\"ok\"}";
+    res->is_static = 1; 
     res->status = 200;
-    res->body_ptr = (char *)json;
-    res->body_len = sizeof(json) - 1;
+    res->body_ptr = json;
+    res->body_len = strlen(json);  // NOT sizeof(json)
 }
 
+
 void handle_echo(http_req_t *req, http_resp_t *res) {
+    // printf("[LOG]: the user hit the /echo route\n");
     static __thread char resp_body[RESP_BUFFER_SIZE];
     int pos = 0;
     pos += snprintf(resp_body + pos, RESP_BUFFER_SIZE - pos, "{");
@@ -32,6 +47,7 @@ void handle_echo(http_req_t *req, http_resp_t *res) {
 }
 
 void handle_404(http_req_t *req, http_resp_t *res) {
+    // printf("[LOG]: this is a site not found error code = 404\n");
     static const char json[] = "{\"error\":\"Not Found\"}";
     res->status = 404;
     res->body_ptr = (char *)json;
@@ -84,5 +100,6 @@ void route_req(http_req_t *req, http_resp_t *res) {
             return;
         }
     }
+    // printf("this is is a 404 error\n");
     handle_404(req, res);
 }

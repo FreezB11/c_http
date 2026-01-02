@@ -53,7 +53,16 @@ SIV handle_readable(conn_ctx_t *ctx){
 
         int consumed = parse_http_req(ctx, &ctx->req);
         if(consumed >0){
+            // printf("[LOG]: we wil now find the route in the base\n");
             route_req(&ctx->req, &ctx->resp);
+            // printf("[DBG]: route=%.*s is_static=%d body_len=%zu body_ptr=%p\n",
+    //    ctx->req.path_len,
+    //    ctx->req.path,
+    //    ctx->resp.is_static,
+    //    ctx->resp.body_len,
+    //    ctx->resp.body_ptr);
+
+            // printf("[LOG]: now the response will be built\n");
             build_resp(ctx, &ctx->resp);
 
             if(consumed < ctx->read_total){
