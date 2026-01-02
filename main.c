@@ -12,13 +12,134 @@ pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 //       http_json_response(res, 200, "{\"userId\":\"%s\"}", id);
 // }
 
-void hi_router(http_req_t *req, http_resp_t *res){
-    static __thread char res_buf[] = "hello";
-    res->is_static = 1;
-    res->status = 200;
-    res->body_ptr = res_buf;
-    res->body_len = strlen(res_buf);
+static inline const char *
+req_get_param(http_req_t *req, const char *key, int *val_len) {
+    int klen = strlen(key);
+
+    for (int i = 0; i < req->param_count; i++) {
+        if (req->params[i].key_len == klen &&
+            memcmp(req->params[i].key, key, klen) == 0) {
+            if (val_len) *val_len = req->params[i].val_len;
+            return req->params[i].val;
+        }
+    }
+    return NULL;
 }
+
+static inline float read_cpu_temp(void) {
+    FILE *f = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
+    if (!f) return -1.0f;
+
+    int millideg;
+    fscanf(f, "%d", &millideg);
+    fclose(f);
+
+    return millideg / 1000.0f;
+}
+
+#define TEMP_BUF_SIZE 64
+
+static float temp_buf[TEMP_BUF_SIZE];
+static int temp_idx = 0;
+static int temp_count = 0;
+static pthread_mutex_t temp_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static inline void record_temp(float t) {
+    pthread_mutex_lock(&temp_lock);
+    temp_buf[temp_idx] = t;
+    temp_idx = (temp_idx + 1) % TEMP_BUF_SIZE;
+    if (temp_count < TEMP_BUF_SIZE) temp_count++;
+    pthread_mutex_unlock(&temp_lock);
+}
+
+static inline float avg_temp(void) {
+    float sum = 0.0f;
+
+    pthread_mutex_lock(&temp_lock);
+    for (int i = 0; i < temp_count; i++)
+        sum += temp_buf[i];
+    pthread_mutex_unlock(&temp_lock);
+
+    return temp_count ? sum / temp_count : 0.0f;
+}
+
+
+
+void cpu_temp_handler(http_req_t *req, http_resp_t *res) {
+    static __thread char buf[512];
+
+    float cur = read_cpu_temp();
+    if (cur < 0) {
+        res->status = 500;
+        res->body_ptr = "temp read error";
+        res->body_len = 15;
+        return;
+    }
+
+    record_temp(cur);
+
+    int avg_len = 0, last_len = 0;
+    const char *avg_q  = req_get_param(req, "avg",  &avg_len);
+    const char *last_q = req_get_param(req, "last", &last_len);
+
+    int off = 0;
+    off += snprintf(buf + off, sizeof(buf) - off, "{");
+
+    int need_comma = 0;
+
+    if (avg_q) {
+        off += snprintf(buf + off, sizeof(buf) - off,
+                        "\"avg\":%.2f", avg_temp());
+        need_comma = 1;
+    }
+
+    if (last_q) {
+        int n = 0;
+        for (int i = 0; i < last_len; i++)
+            if (last_q[i] >= '0' && last_q[i] <= '9')
+                n = n * 10 + (last_q[i] - '0');
+
+        if (n > TEMP_BUF_SIZE) n = TEMP_BUF_SIZE;
+
+        if (need_comma)
+            off += snprintf(buf + off, sizeof(buf) - off, ",");
+
+        off += snprintf(buf + off, sizeof(buf) - off, "\"last\":[");
+
+        pthread_mutex_lock(&temp_lock);
+        for (int i = 0; i < n && i < temp_count; i++) {
+            int idx = (temp_idx - 1 - i + TEMP_BUF_SIZE) % TEMP_BUF_SIZE;
+            off += snprintf(buf + off, sizeof(buf) - off,
+                            "%.2f%s",
+                            temp_buf[idx],
+                            (i + 1 < n && i + 1 < temp_count) ? "," : "");
+        }
+        pthread_mutex_unlock(&temp_lock);
+
+        off += snprintf(buf + off, sizeof(buf) - off, "]");
+        need_comma = 1;
+    }
+
+    if (!avg_q && !last_q) {
+        off += snprintf(buf + off, sizeof(buf) - off,
+                        "\"temp\":%.2f", cur);
+    }
+
+    off += snprintf(buf + off, sizeof(buf) - off, "}");
+
+    res->status = 200;
+    res->is_static = 1;
+    res->body_ptr = buf;
+    res->body_len = off;
+}
+
+// void hi_router(http_req_t *req, http_resp_t *res){
+//     static __thread char res_buf[] = "hello";
+//     res->is_static = 1;
+//     res->status = 200;
+//     res->body_ptr = res_buf;
+//     res->body_len = strlen(res_buf);
+// }
 
 int main(){
     /*
@@ -49,7 +170,8 @@ int main(){
     */
     add_route("GET","/echo", handle_echo);
     add_route("GET","/ping", handle_ping);
-    add_route("GET","/hi", hi_router);
+    add_route("GET", "/api/v1/cpu/temp", cpu_temp_handler);
+    // add_route("GET","/hi", hi_router);
     if (!App) {
         fprintf(stderr, "Failed to create server\n");
         return 1;
