@@ -7,11 +7,6 @@ conn_ctx_t *conn_pool = NULL;
 int conn_pool_next = 0;
 pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// void user_handler(http_req_t *req, http_resp_t *res, void *user_data){
-//       const char *id = http_get_param(req, "id");
-//       http_json_response(res, 200, "{\"userId\":\"%s\"}", id);
-// }
-
 static inline const char *
 req_get_param(http_req_t *req, const char *key, int *val_len) {
     int klen = strlen(key);
@@ -133,41 +128,8 @@ void cpu_temp_handler(http_req_t *req, http_resp_t *res) {
     res->body_len = off;
 }
 
-// void hi_router(http_req_t *req, http_resp_t *res){
-//     static __thread char res_buf[] = "hello";
-//     res->is_static = 1;
-//     res->status = 200;
-//     res->body_ptr = res_buf;
-//     res->body_len = strlen(res_buf);
-// }
-
 int main(){
-    /*
-    http server = http_server(<optional_name>, port, ipv4 or ipv6)
-    add_route(server, "/route/[]");
-    =================================
-    http_server_t *srv = http_server_create(4);
-
-    http_server_route(srv, "GET", "/ping", ping_handler, NULL);
-    http_server_route(srv, "GET", "/echo", echo_handler, NULL);
-
-    http_server_listen(srv, "0.0.0.0", 8080);
-    http_server_run(srv);
-
-    http_server_destroy(srv);
-
-    */
-    // signal(SIGPIPE, SIG_IGN);
-
     http *App = CreateServer();
-    // http_route(App, "GET", "/", home_handler, NULL);
-    // add_route("GET", "/users/", user_handler, NULL);
-    /*
-    void user_handler(http_req_t *req, http_resp_t *res, void *user_data){
-      const char *id = http_get_param(req, "id");
-      http_json_response(res, 200, "{\"userId\":\"%s\"}", id);
-    }
-    */
     add_route("GET","/echo", handle_echo);
     add_route("GET","/ping", handle_ping);
     add_route("GET", "/api/v1/cpu/temp", cpu_temp_handler);

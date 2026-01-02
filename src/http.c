@@ -32,12 +32,6 @@ http* CreateServer(){
     printf("╠════════════════════════════════════════════╣\n");
     printf("║  📡 Port: 8080                            ║\n");
     printf("║  🔥 Threads: %-2d                           ║\n", threads);
-    printf("║  ⚡ Optimizations:                         ║\n");
-    printf("║     • SO_REUSEPORT per thread             ║\n");
-    printf("║     • Memory pooling                      ║\n");
-    printf("║     • Pre-compiled responses              ║\n");
-    printf("║     • CPU affinity pinning                ║\n");
-    printf("║     • Zero-copy for static responses      ║\n");
     printf("╚════════════════════════════════════════════╝\n");
     printf("\n📊 Benchmark:\n");
     printf("   wrk -t12 -c400 -d30s http://localhost:8080/ping\n");
