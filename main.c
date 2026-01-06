@@ -148,21 +148,9 @@ int main(){
     return HTTP_STATS;
 }
 
-// gcc -O3 -march=native -flto -pthread -D_GNU_SOURCE claud.c -o claud     
 /*
-best result
-for threadcount 7 and tested with 7 threads
-❯ wrk -t7 -c400 -d10s http://localhost:8080/echo\?key\=value
-Running 10s test @ http://localhost:8080/echo?key=value
-  7 threads and 400 connections
-  Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   145.58us   66.29us   5.41ms   91.78%
-    Req/Sec   212.58k    60.04k  311.75k    71.86%
-  14807030 requests in 10.03s, 1.86GB read
-Requests/sec: 1476283.74
-Transfer/sec:    190.07MB
-
 : 1765966243:0;gcc -O3 -I include -march=native -flto -pthread -D_GNU_SOURCE main.c ./src/*.c -o http
 : 1765966245:0;./http
 
+grim -o "$(hyprctl monitors | awk '/Monitor/{mon=$2} /focused: yes/{print mon}')" screenshot.png   
 */
