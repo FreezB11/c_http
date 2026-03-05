@@ -1,5 +1,13 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 // internal
 #include <http/request.h>
 #include <http/response.h>
@@ -37,16 +45,18 @@ pool_mutex → ensures thread safety when multiple threads allocate
 */
 // memory pool for connections
 extern conn_ctx_t *conn_pool;
-extern int conn_pool_next;
+// extern int conn_pool_next;
 extern pthread_mutex_t pool_mutex;
 
-typedef struct{
-    // to be done soon
-    int dummy; // placeholder
-}http;
+/* Configurable server port — set before calling run_server() */
+extern int server_port;
 
-SIV setup_socket(int fd);
-http* CreateServer();
-SIV build_resp(conn_ctx_t *ctx, http_resp_t *res);
+void setup_socket(int fd);
+/* Allocates pool, spawns worker threads, blocks until SIGINT/SIGTERM */
+void run_server(int port, int thread_count);
 
 #define HTTP_STATS 0
+
+#ifdef __cplusplus
+}
+#endif

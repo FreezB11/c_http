@@ -1,4 +1,8 @@
 #pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <http/request.h>
 #include <http/response.h>
 #include <http/utils.h>
@@ -24,17 +28,25 @@ req	            Parsed HTTP request info (method, path, headers, body).
 resp	        Prepared HTTP response info (status, body pointer, length).
 */
 typedef struct {
-    int fd;
-    conn_state_t state;
-    char *read_buf;
-    char *write_buf;
-    int read_total;
-    int write_total;
-    int write_pos;
-    http_req_t req;
-    http_resp_t resp;
+    int           fd;
+    conn_state_t  state;
+    char         *read_buf;        /* BUFFER_SIZE bytes, heap */
+    char         *write_buf;       /* RESP_BUFFER_SIZE bytes, heap */
+    int           read_total;
+    int           write_total;
+    int           write_pos;
+    int           pool_index;      /* -1 if heap-allocated fallback */
+    http_req_t    req;
+    http_resp_t   resp;
+    /* dynamic response body — C++ layer writes here before build_resp */
+    char          resp_body[32768];
 } conn_ctx_t;
 
-conn_ctx_t *alloc_conn();
-SIV handle_readable(conn_ctx_t *ctx);
-SIV handle_writable(conn_ctx_t *ctx);
+conn_ctx_t *alloc_conn(void);
+void        free_conn(conn_ctx_t *ctx);
+void        handle_readable(conn_ctx_t *ctx);
+void        handle_writable(conn_ctx_t *ctx);
+
+#ifdef __cplusplus
+}
+#endif
