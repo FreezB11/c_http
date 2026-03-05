@@ -1,7 +1,7 @@
 #pragma once
-#include <http/router.hpp>
-#include <http/middleware.hpp>
-#include <http/json.hpp>
+#include <v1/router.hpp>
+#include <v1/middleware.hpp>
+#include <v1/json.hpp>
 #include <http/http.h>
 #include <http/route.h>
 
