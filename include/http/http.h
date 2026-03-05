@@ -48,6 +48,9 @@ extern conn_ctx_t *conn_pool;
 // extern int conn_pool_next;
 extern pthread_mutex_t pool_mutex;
 
+/* Set to 0 by SIGINT/SIGTERM — workers check this and exit */
+extern volatile int g_running;
+
 /* Configurable server port — set before calling run_server() */
 extern int server_port;
 

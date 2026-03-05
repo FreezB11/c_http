@@ -9,8 +9,12 @@ conn_ctx_t      *conn_pool  = NULL;
 pthread_mutex_t  pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 int              server_port = 8080;
 
-static volatile int g_running = 1;
-static void sig_handler(int sig) { (void)sig; g_running = 0; }
+volatile int g_running = 1;   /* extern in http.h — workers check this */
+static void sig_handler(int sig) {
+    (void)sig;
+    g_running = 0;
+    /* Nothing else needed — epoll_wait returns EINTR, workers check g_running */
+}
 
 void setup_socket(int fd) {
     int flags = 1;
@@ -59,12 +63,22 @@ void run_server(int port, int thread_count) {
         }
     }
 
-    printf("Listening on http://0.0.0.0:%d\n\n", port);
+    printf("Listening on http://0.0.0.0:%d  (Ctrl+C to stop)\n\n", port);
     fflush(stdout);
 
-    /* Block until SIGINT/SIGTERM */
+    /* Block main thread until SIGINT/SIGTERM sets g_running = 0 */
+    while (g_running)
+        pause();   /* sleeps until any signal arrives, then rechecks */
+
+    printf("\n[http] Shutting down...\n");
+    fflush(stdout);
+
+    /* Cancel all worker threads — they're blocked in epoll_wait */
+    for (int i = 0; i < thread_count; i++)
+        pthread_cancel(threads[i]);
     for (int i = 0; i < thread_count; i++)
         pthread_join(threads[i], NULL);
 
     munmap(conn_pool, sizeof(conn_ctx_t) * CONN_POOL_SIZE);
+    printf("[http] Stopped.\n");
 }

@@ -49,10 +49,11 @@ void *worker_thread(void *arg) {
            cpu % (int)sysconf(_SC_NPROCESSORS_ONLN));
     fflush(stdout);
 
-    while (1) {
-        int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+    while (g_running) {
+        int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, 500);
+        /* 500ms timeout so we re-check g_running even with no traffic */
         if (nfds < 0) {
-            if (errno == EINTR) continue;
+            if (errno == EINTR) continue;  /* signal — loop back, check g_running */
             break;
         }
 
